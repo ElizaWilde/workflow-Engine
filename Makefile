@@ -26,4 +26,4 @@ check:
 	go test ./...
 
 generate:
-	GOTOOLCHAIN=go1.23.12 go run github.com/99designs/gqlgen generate
+	go run github.com/99designs/gqlgen generate

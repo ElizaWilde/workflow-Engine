@@ -60,7 +60,7 @@ Redis, NATS/Kafka, gRPC, a visual workflow designer, search/list pagination, quo
 
 ## Run locally in WSL
 
-The application, PostgreSQL, and tests run directly in Ubuntu on WSL. Go 1.23+ is required; the setup script installs PostgreSQL and the C compiler used by Go's race detector:
+The application, PostgreSQL, and tests run directly in Ubuntu on WSL. Go 1.26+ is required; the setup script installs PostgreSQL and the C compiler used by Go's race detector:
 
 ```sh
 bash scripts/setup-wsl.sh
@@ -233,7 +233,7 @@ make integration-local # All tests with the race detector against native Postgre
 make integration    # Loads .env; runs integration tests using TEST_DATABASE_URL
 make race           # Unit/API tests under the race detector; C compiler required
 make check          # go vet and unit/API tests
-make generate       # Regenerate checked-in gqlgen code using pinned Go 1.23.12
+make generate       # Regenerate checked-in code using the gqlgen version in go.mod
 make build
 ```
 

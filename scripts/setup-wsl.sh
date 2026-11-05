@@ -10,7 +10,7 @@ if (( EUID == 0 )); then
   exit 1
 fi
 if ! command -v apt-get >/dev/null || ! command -v go >/dev/null; then
-  printf 'This setup requires Ubuntu/Debian with Go 1.23+ installed.\n' >&2
+  printf 'This setup requires Ubuntu/Debian with Go 1.26+ installed.\n' >&2
   exit 1
 fi
 if [[ ! -e .env ]]; then
