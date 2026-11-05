@@ -1,0 +1,53 @@
+"A signed 64-bit integer, serialized as a decimal string to preserve precision."
+scalar Int64
+scalar Time
+
+enum QuoteState { DRAFT SUBMITTED APPROVED REJECTED ISSUED CANCELLED }
+enum QuoteAction { SUBMIT APPROVE REJECT ISSUE CANCEL }
+
+type Quote {
+  id: ID!
+  reference: String!
+  currency: String!
+  amountMinor: Int64!
+  owner: String!
+  state: QuoteState!
+  version: Int64!
+  createdAt: Time!
+  updatedAt: Time!
+}
+
+type QuoteEvent {
+  quoteId: ID!
+  version: Int64!
+  from: QuoteState
+  to: QuoteState!
+  action: String!
+  actor: String!
+  at: Time!
+  quote: Quote!
+}
+
+input CreateQuoteInput {
+  reference: String!
+  currency: String!
+  amountMinor: Int64!
+}
+
+input UpdateQuoteInput {
+  version: Int64!
+  reference: String!
+  currency: String!
+  amountMinor: Int64!
+}
+
+type Query {
+  quote(id: ID!): Quote!
+  quoteHistory(id: ID!): [QuoteEvent!]!
+}
+
+type Mutation {
+  createQuote(input: CreateQuoteInput!): Quote!
+  updateQuote(id: ID!, input: UpdateQuoteInput!): Quote!
+  executeQuoteAction(id: ID!, version: Int64!, action: QuoteAction!): Quote!
+}

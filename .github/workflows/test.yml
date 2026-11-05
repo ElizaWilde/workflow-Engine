@@ -1,0 +1,19 @@
+name: Test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: bash scripts/setup-wsl.sh
+      - run: go vet ./...
+      - run: make integration-local
+      - run: make generate && git diff --exit-code

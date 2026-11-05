@@ -1,0 +1,19 @@
+schema:
+  - internal/transport/graphql/*.graphqls
+exec:
+  filename: internal/transport/graphql/generated.go
+  package: graphql
+model:
+  filename: internal/transport/graphql/model/models_gen.go
+  package: model
+resolver:
+  layout: follow-schema
+  dir: internal/transport/graphql
+  package: graphql
+models:
+  Int64:
+    model:
+      - example.com/oracle-bmi/workflow-engine/internal/transport/graphql/scalar.Int64
+  Time:
+    model:
+      - github.com/99designs/gqlgen/graphql.Time

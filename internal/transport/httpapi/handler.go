@@ -24,12 +24,15 @@ func New(engine *workflow.Engine, logger *slog.Logger) http.Handler {
 <p><a href="/healthz">Check service health</a></p>
 <h2>API endpoints</h2>
 <ul>
+<li><code>POST /graphql</code> — GraphQL queries and mutations. Explore the schema at <a href="/playground">/playground</a>.</li>
 <li><code>POST /quotes</code> — Create a draft quote.</li>
 <li><code>GET /quotes/{id}</code> — Read a quote.</li>
+<li><code>PUT /quotes/{id}</code> — Edit a draft using its version.</li>
+<li><code>POST /quotes/{id}/actions</code> — Submit, approve, reject, issue, or cancel a quote.</li>
 <li><code>POST /quotes/{id}/transitions</code> — Change a quote's lifecycle state.</li>
 <li><code>GET /quotes/{id}/history</code> — Read its audit history.</li>
 </ul>
-<p>Use an HTTP client to send JSON to POST endpoints. See the project README for examples.</p>
+<p>Quote and GraphQL endpoints require a configured bearer token. See the project README for setup and examples.</p>
 </body>
 </html>`)
 	})
@@ -65,16 +68,42 @@ func New(engine *workflow.Engine, logger *slog.Logger) http.Handler {
 		}
 		respond(w, http.StatusOK, events)
 	})
-	mux.HandleFunc("POST /quotes/{id}/transitions", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("PUT /quotes/{id}", func(w http.ResponseWriter, r *http.Request) {
+		var in workflow.UpdateInput
+		if !decode(w, r, &in) {
+			return
+		}
+		q, err := engine.Update(r.Context(), r.PathValue("id"), in)
+		if err != nil {
+			fail(w, r, logger, err)
+			return
+		}
+		respond(w, http.StatusOK, q)
+	})
+	mux.HandleFunc("POST /quotes/{id}/actions", func(w http.ResponseWriter, r *http.Request) {
 		var in struct {
-			Version int64        `json:"version"`
-			To      domain.State `json:"to"`
-			Actor   string       `json:"actor"`
+			Version int64         `json:"version"`
+			Action  domain.Action `json:"action"`
 		}
 		if !decode(w, r, &in) {
 			return
 		}
-		q, err := engine.Move(r.Context(), r.PathValue("id"), in.Version, in.To, in.Actor)
+		q, err := engine.Execute(r.Context(), r.PathValue("id"), in.Version, in.Action)
+		if err != nil {
+			fail(w, r, logger, err)
+			return
+		}
+		respond(w, http.StatusOK, q)
+	})
+	mux.HandleFunc("POST /quotes/{id}/transitions", func(w http.ResponseWriter, r *http.Request) {
+		var in struct {
+			Version int64        `json:"version"`
+			To      domain.State `json:"to"`
+		}
+		if !decode(w, r, &in) {
+			return
+		}
+		q, err := engine.Move(r.Context(), r.PathValue("id"), in.Version, in.To)
 		if err != nil {
 			fail(w, r, logger, err)
 			return
@@ -108,6 +137,12 @@ func respond(w http.ResponseWriter, status int, v any) {
 func fail(w http.ResponseWriter, r *http.Request, logger *slog.Logger, err error) {
 	status, message := http.StatusInternalServerError, "internal server error"
 	switch {
+	case errors.Is(err, domain.ErrUnauthorized):
+		status, message = http.StatusUnauthorized, domain.ErrUnauthorized.Error()
+	case errors.Is(err, domain.ErrForbidden):
+		status, message = http.StatusForbidden, domain.ErrForbidden.Error()
+	case errors.Is(err, domain.ErrRule):
+		status, message = http.StatusUnprocessableEntity, err.Error()
 	case errors.Is(err, domain.ErrNotFound):
 		status, message = http.StatusNotFound, domain.ErrNotFound.Error()
 	case errors.Is(err, domain.ErrConflict):
